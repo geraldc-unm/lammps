@@ -26,5 +26,5 @@ thermo          1
 thermo_style custom pe etotal epair evdwl ecoul elong
 
 run_style verlet/kk
-run             0
+run             100
 
