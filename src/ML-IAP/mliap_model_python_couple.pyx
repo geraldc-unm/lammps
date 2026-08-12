@@ -69,9 +69,9 @@ cdef public int MLIAPPY_load_model(MLIAPModelPython * c_model, char* fname) with
     else:
         if str_fname.endswith(".pt") or str_fname.endswith('.pth'):
             import torch
-            device = torch.device("xpu")
+            device = torch.device("cuda")
             model = torch.load(str_fname, map_location=device, weights_only=False)
-            model.model.to(device)
+            #model.model.to(device)
             model.model.eval()
             #print("model device:", next(model.model.parameters()).device)
         else:
