@@ -18,7 +18,7 @@
 
 namespace LAMMPS_NS {
 
-class MLIAPDescriptorMTP : public MLIAPDescriptor {
+class MLIAPDescriptorMTP : public MLIAPDescriptor, virtual protected Pointers {
  public:
   MLIAPDescriptorMTP(class LAMMPS *);
   ~MLIAPDescriptorMTP() override;
@@ -54,6 +54,9 @@ class MLIAPDescriptorMTP : public MLIAPDescriptor {
 
   int n_radial;
   int n_rf;
+
+  static constexpr int MAX_N_RADIAL = 12;
+  static constexpr int MAX_N_RF = 8;
 
   int max_nu;
   int max_level;

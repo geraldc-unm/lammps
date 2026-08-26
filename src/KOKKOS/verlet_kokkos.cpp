@@ -31,7 +31,10 @@
 #include "timer.h"
 #include "kokkos.h"
 
-#include <nvtx3/nvToolsExt.h>
+#include "pair_mliap_kokkos.h"
+#include "pppm_kokkos.h"
+
+//#include <nvtx3/nvToolsExt.h>
 
 using namespace LAMMPS_NS;
 
@@ -122,13 +125,13 @@ void VerletKokkos::setup(int flag)
   force_clear();
   modify->setup_pre_force(vflag);
 
-  nvtxRangePushA("ML-IAP Setup");
+  //nvtxRangePushA("ML-IAP Setup");
   if (pair_compute_flag) {
     atomKK->sync(force->pair->execution_space,force->pair->datamask_read);
     force->pair->compute(eflag,vflag);
     atomKK->modified(force->pair->execution_space,force->pair->datamask_modify);
   } else if (force->pair) force->pair->compute_dummy(eflag,vflag,0);
-  nvtxRangePop();
+  //nvtxRangePop();
 
   if (atom->molecular != Atom::ATOMIC) {
     if (force->bond) {
@@ -153,7 +156,7 @@ void VerletKokkos::setup(int flag)
     }
   }
 
-  nvtxRangePushA("PPPM Setup");
+  //nvtxRangePushA("PPPM Setup");
   if (force->kspace) {
     force->kspace->setup();
     if (kspace_compute_flag) {
@@ -162,12 +165,22 @@ void VerletKokkos::setup(int flag)
       atomKK->modified(force->kspace->execution_space,force->kspace->datamask_modify);
     } else force->kspace->compute_dummy(eflag,vflag,0);
   }
-  nvtxRangePop();
+  //nvtxRangePop();
 
-  nvtxRangePushA("Reverse Comm Setup");
+  // Add force correction for charges dependent on position
+  //   Hard-coded for MLIAP and PPPM for now
+  auto *pair_mliap =
+    dynamic_cast<PairMLIAPKokkos<LMPDeviceType> *>(force->pair);
+  auto *pppm =
+    dynamic_cast<PPPMKokkos<LMPDeviceType> *>(force->kspace);
+  if (pair_mliap && pppm) {
+    pair_mliap->compute_charge_response_forces(pppm->get_phi());
+  }
+
+  //nvtxRangePushA("Reverse Comm Setup");
   modify->setup_pre_reverse(eflag,vflag);
   if (force->newton) comm->reverse_comm();
-  nvtxRangePop();
+  //nvtxRangePop();
 
   lmp->kokkos->auto_sync = 0;
   modify->setup(vflag);
@@ -447,7 +460,7 @@ void VerletKokkos::run(int n)
     // (e.g. via the DomainKokkos x2lamda/lamda2x overrides) writes changes
     // through to the legacy host arrays the style reads and writes
 
-    nvtxRangePushA("ML-IAP");
+    //nvtxRangePushA("ML-IAP");
     if (pair_compute_flag) {
       int prev_auto_sync = lmp->kokkos->auto_sync;
       if (!force->pair->kokkosable) lmp->kokkos->auto_sync = 1;
@@ -459,7 +472,7 @@ void VerletKokkos::run(int n)
       atomKK->modified(force->pair->execution_space,~(~force->pair->datamask_modify|datamask_exclude));
       timer->stamp(Timer::PAIR);
     }
-    nvtxRangePop();
+    //nvtxRangePop();
 
     if (execute_on_host) {
       if (pair_compute_flag && force->pair->datamask_modify != datamask_exclude)
@@ -515,7 +528,7 @@ void VerletKokkos::run(int n)
       timer->stamp(Timer::BOND);
     }
 
-    nvtxRangePushA("PPPM");
+    //nvtxRangePushA("PPPM");
     if (kspace_compute_flag) {
       int prev_auto_sync = lmp->kokkos->auto_sync;
       if (!force->kspace->kokkosable) lmp->kokkos->auto_sync = 1;
@@ -525,7 +538,7 @@ void VerletKokkos::run(int n)
       atomKK->modified(force->kspace->execution_space,~(~force->kspace->datamask_modify|datamask_exclude));
       timer->stamp(Timer::KSPACE);
     }
-    nvtxRangePop();
+    //nvtxRangePop();
 
     if (execute_on_host) {
       if (f_merge_copy.extent(0) < atomKK->k_f.extent(0))
@@ -546,13 +559,13 @@ void VerletKokkos::run(int n)
 
     // reverse communication of forces
 
-    nvtxRangePushA("Reverse Comm");
+    //nvtxRangePushA("Reverse Comm");
     if (force->newton) {
       Kokkos::fence();
       comm->reverse_comm();
       timer->stamp(Timer::COMM);
     }
-    nvtxRangePop();
+    //nvtxRangePop();
 
     // force modifications, final time integration, diagnostics
 

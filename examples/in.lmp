@@ -5,9 +5,7 @@ boundary        p p p
 
 read_data       bigger.data
 
-suffix off
 pair_style      mliap model mliappy hfo2_model_wrapped.pt descriptor mtp 
-suffix on
 pair_coeff       * * Hf O
 
 kspace_style pppm/kk 1.0e-6

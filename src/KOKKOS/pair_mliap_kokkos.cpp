@@ -32,6 +32,8 @@
 #include "kokkos.h"
 #include "pointers.h"
 
+#include "mliap_descriptor_mtp_kokkos.h"
+
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
@@ -666,6 +668,25 @@ void PairMLIAPKokkos<DeviceType>::unpack_reverse_comm(int nv, int *idx, double *
       copy_to[gstart++] += static_cast<CommType>(fill[start++]);
   }
 }
+
+template <class DeviceType>
+void PairMLIAPKokkos<DeviceType>::compute_charge_response_forces(
+    typename ArrayTypes<DeviceType>::t_double_1d d_phi)
+{
+  MLIAPDescriptorMTPKokkos<DeviceType> *mtp =
+      dynamic_cast<MLIAPDescriptorMTPKokkos<DeviceType> *>(descriptor);
+
+  if (!mtp) return;
+
+  MLIAPDataKokkos<DeviceType> *k_data = (MLIAPDataKokkos<DeviceType>*)(data);
+
+  mtp->compute_forces_from_coeffs(
+      k_data,
+      k_data->k_charge_betas,
+      d_phi);
+}
+
+
 namespace LAMMPS_NS {
 template class PairMLIAPKokkos<LMPDeviceType>;
 template int PairMLIAPKokkos<LMPDeviceType>::forward_comm<float>(float*,float*,const int);
