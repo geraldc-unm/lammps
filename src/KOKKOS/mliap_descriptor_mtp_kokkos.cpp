@@ -208,8 +208,8 @@ void MLIAPDescriptorMTPKokkos<DeviceType>::compute_descriptors(
           if (r >= d_cutoff)
             continue;
 
-          double basis[d_nradial];
-          double dbasisdr[d_nradial];
+          double basis[MAX_N_RADIAL];
+          double dbasisdr[MAX_N_RADIAL];
 
           MLIAPDescriptorMTPKokkosChebyshev(
               r, d_cutoff, d_rmin, d_nradial, basis, dbasisdr);
@@ -417,8 +417,8 @@ void MLIAPDescriptorMTPKokkos<DeviceType>::compute_forces_from_coeffs(
           if (r >= d_cutoff)
             continue;
 
-          double basis[d_nradial];
-          double dbasisdr[d_nradial];
+          double basis[MAX_N_RADIAL];
+          double dbasisdr[MAX_N_RADIAL];
 
           MLIAPDescriptorMTPKokkosChebyshev(
               r, d_cutoff, d_rmin, d_nradial,
@@ -475,15 +475,15 @@ void MLIAPDescriptorMTPKokkos<DeviceType>::compute_forces_from_coeffs(
           const double ey = dy * rinv;
           const double ez = dz * rinv;
 
-          double basis[d_nradial];
-          double dbasisdr[d_nradial];
+          double basis[MAX_N_RADIAL];
+          double dbasisdr[MAX_N_RADIAL];
 
           MLIAPDescriptorMTPKokkosChebyshev(
               r, d_cutoff, d_rmin, d_nradial,
               basis, dbasisdr);
 
-          double fmu[d_n_rf];
-          double dfmu[d_n_rf];
+          double fmu[MAX_N_RF];
+          double dfmu[MAX_N_RF];
 
           for (int mu = 0; mu < d_n_rf; ++mu) {
             double f = 0.0;
