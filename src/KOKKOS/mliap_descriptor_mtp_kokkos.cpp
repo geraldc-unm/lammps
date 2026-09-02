@@ -127,8 +127,8 @@ void MLIAPDescriptorMTPKokkosChebyshev(
       dfcdr = -2.0 * tmp / (cutoff - rmin);
   }
 
-  double T[n_radial];
-  double dTdx[n_radial];
+  double T[MAX_N_RADIAL];
+  double dTdx[MAX_N_RADIAL];
 
   T[0] = 1.0;
   dTdx[0] = 0.0;
