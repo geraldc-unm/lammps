@@ -32,6 +32,9 @@ class MLIAPDescriptorMTP : public MLIAPDescriptor, virtual protected Pointers {
   void compute_force_gradients(class MLIAPData *) override;
   bool printed = false;
 
+  static constexpr int MAX_N_RADIAL = 12;
+  static constexpr int MAX_N_RF = 8;
+
  protected:
   enum BasisType {
     NU0,
@@ -54,9 +57,6 @@ class MLIAPDescriptorMTP : public MLIAPDescriptor, virtual protected Pointers {
 
   int n_radial;
   int n_rf;
-
-  static constexpr int MAX_N_RADIAL = 12;
-  static constexpr int MAX_N_RF = 8;
 
   int max_nu;
   int max_level;
