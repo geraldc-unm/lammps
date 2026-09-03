@@ -10,9 +10,20 @@ import pickle
 # For converting C arrays to numpy arrays
 import numpy
 import torch
+
+mode = "cpu"
 try:
     import cupy
+    mode = "nvidia"
 except ImportError:
+    pass
+
+try:
+    import dpctl
+    import dpctl.memory as dpmem
+    import dpnp
+    mode = "intel"
+expect ImportError:
     pass
 
 using_cuda = torch.cuda.is_available() and torch.cuda.current_device() >= 0
@@ -134,13 +145,32 @@ cdef create_array(device, void *pointer, shape,is_int):
     for i in shape:
         size = size*i
 
-    if ( device == 1) and using_cuda:
+    if ( device == 1) :
+        if (mode == "nvidia"):
             mem = cupy.cuda.UnownedMemory(ptr=int( <uintptr_t> pointer), owner=None, size=size)
             memptr = cupy.cuda.MemoryPointer(mem, 0)
             type=cupy.double
             if (is_int):
                 type=cupy.int32
             return cupy.ndarray(shape, type, memptr=memptr)
+        else:
+            q = dpctl.SyclQueue()  # need to get queue Kokkos is using here
+            usm_type = "device"
+
+            # Wrap the raw pointer as unowned USM memory
+            mem = dpmem.as_usm_memory(
+                {
+                    "data": (int(<uintptr_t> pointer), False),
+                    "shape": shape,
+                    "strides": None,
+                    "typestr": "<i4" if is_int else "<f8",
+                    "version": 1,
+                    "syclobj": q,
+                }
+            )
+
+            dtype = dpnp.int32 if is_int else dpnp.float64
+            return dpnp.ndarray(shape, dtype=dtype, buffer=mem)
     else:
         if (len(shape) == 1 ):
             if (is_int):
@@ -158,7 +188,7 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
 
     dev=data.dev
 
-    if using_cuda:
+    if (mode == "nvidia"):
         torch.cuda.nvtx.range_push("set data fields")
     model = retrieve(c_model)
     n_d = data.ndescriptors
@@ -169,7 +199,7 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
         data.energy[0] = 0.0
         data.update_charges()
 
-        if using_cuda:
+        if (mode == "nvidia"):
             torch.cuda.nvtx.range_pop()
 
         return
@@ -182,24 +212,26 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
     charges_cp = create_array(dev, data.charges, (n_a,), False)
     charge_beta_cp = create_array(dev, data.charge_betas, (n_a, n_d), False)
 
-    if using_cuda:
+    if (mode == "nvidia"):
         torch.cuda.nvtx.range_pop()
 
     # Invoke Python model on device/host arrays.
-    if using_cuda:
+    if (mode == "nvidia"):
         torch.cuda.nvtx.range_push("call model")
 
     model(elem_cp, desc_cp, beta_cp, en_cp, charges_cp, charge_beta_cp) # TODO: ", dev==1"?
 
-    if using_cuda:
+    if (mode == "nvidia"):
         torch.cuda.nvtx.range_pop()
 
     # Update charges in KSpace
     data.update_charges()
 
     # Get the total energy from the atom energy.
-    if using_cuda:
+    if (mode == "nvidia"):
         energy = cupy.sum(en_cp)
+    elif (mode == "intel"):
+        energy = dpnp.sum(en_cp)
     else:
         energy = numpy.sum(en_cp)
 
