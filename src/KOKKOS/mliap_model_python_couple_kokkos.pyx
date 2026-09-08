@@ -23,10 +23,8 @@ try:
     import dpctl.memory as dpmem
     import dpnp
     mode = "intel"
-expect ImportError:
+except ImportError:
     pass
-
-using_cuda = torch.cuda.is_available() and torch.cuda.current_device() >= 0
 
 # For converting void * to integer for tracking object identity
 from libc.stdint cimport uintptr_t
@@ -205,7 +203,7 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
         return
 
     # Make arrays from raw Kokkos/device pointers.
-    elem_cp = create_array(dev, data.ielems, (n_d,), True)
+    elem_cp = create_array(dev, data.ielems, (n_a,), True)
     en_cp   = create_array(dev, data.eatoms, (n_a,), False)
     beta_cp = create_array(dev, data.betas, (n_a, n_d), False)
     desc_cp = create_array(dev, data.descriptors, (n_a, n_d), False)
@@ -237,3 +235,4 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
 
     data.energy[0] = <double> energy
     return
+
