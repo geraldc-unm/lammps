@@ -379,6 +379,8 @@ double *MLIAPDataKokkos<DeviceType>::get_charges()
 template <class DeviceType>
 void MLIAPDataKokkos<DeviceType>::update_charges()
 {
+  AtomKokkos *atomKK = (AtomKokkos *) atom;
+  atomKK->modified(execution_space, Q_MASK);
   if (force->kspace)
     force->kspace->qsum_qsq(1);
 }

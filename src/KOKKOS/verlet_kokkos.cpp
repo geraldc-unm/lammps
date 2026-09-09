@@ -156,11 +156,6 @@ void VerletKokkos::setup(int flag)
     }
   }
 
-  // print charges
-  for (int i = 0; i < atom->nlocal; i++) {
-    printf("atom %d charge %f\n", i, atom_kk->q[i]);
-  }
-  
   //nvtxRangePushA("PPPM Setup");
   if (force->kspace) {
     force->kspace->setup();
@@ -529,11 +524,6 @@ void VerletKokkos::run(int n)
         atomKK->modified(force->improper->execution_space,~(~force->improper->datamask_modify|datamask_exclude));
       }
       timer->stamp(Timer::BOND);
-    }
-
-    // print charges
-    for (int i = 0; i < atom->nlocal; i++) {
-      printf("atom %d charge %f\n", i, atom_kk->q[i]);
     }
 
     //nvtxRangePushA("PPPM");
