@@ -222,7 +222,9 @@ cdef public void MLIAPPYKokkos_compute_gradients(MLIAPModelPythonKokkosDevice * 
     if (mode == "nvidia"):
         torch.cuda.nvtx.range_pop()
 
-    # Update charges in KSpace
+    # Charge bookkeeping
+    AtomKokkos *atomKK = (AtomKokkos *) atom;
+    atomKK->modified(execution_space, Q_MASK);
     data.update_charges()
 
     # Get the total energy from the atom energy.

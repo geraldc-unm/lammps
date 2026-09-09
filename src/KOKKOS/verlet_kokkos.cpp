@@ -156,6 +156,11 @@ void VerletKokkos::setup(int flag)
     }
   }
 
+  // print charges
+  for (int i = 0; i < atom->nlocal; i++) {
+    printf("atom %d charge %f\n", i, atom_kk->q[i]);
+  }
+  
   //nvtxRangePushA("PPPM Setup");
   if (force->kspace) {
     force->kspace->setup();
@@ -169,10 +174,8 @@ void VerletKokkos::setup(int flag)
 
   // Add force correction for charges dependent on position
   //   Hard-coded for MLIAP and PPPM for now
-  auto *pair_mliap =
-    dynamic_cast<PairMLIAPKokkos<LMPDeviceType> *>(force->pair);
-  auto *pppm =
-    dynamic_cast<PPPMKokkos<LMPDeviceType> *>(force->kspace);
+  auto *pair_mliap = dynamic_cast<PairMLIAPKokkos<LMPDeviceType> *>(force->pair);
+  auto *pppm = dynamic_cast<PPPMKokkos<LMPDeviceType> *>(force->kspace);
   if (pair_mliap && pppm) {
     pair_mliap->compute_charge_response_forces(pppm->get_phi());
   }
@@ -528,6 +531,11 @@ void VerletKokkos::run(int n)
       timer->stamp(Timer::BOND);
     }
 
+    // print charges
+    for (int i = 0; i < atom->nlocal; i++) {
+      printf("atom %d charge %f\n", i, atom_kk->q[i]);
+    }
+
     //nvtxRangePushA("PPPM");
     if (kspace_compute_flag) {
       int prev_auto_sync = lmp->kokkos->auto_sync;
@@ -539,6 +547,14 @@ void VerletKokkos::run(int n)
       timer->stamp(Timer::KSPACE);
     }
     //nvtxRangePop();
+
+    // Add force correction for charges dependent on position
+    //   Hard-coded for MLIAP and PPPM for now
+    auto *pair_mliap = dynamic_cast<PairMLIAPKokkos<LMPDeviceType> *>(force->pair);
+    auto *pppm = dynamic_cast<PPPMKokkos<LMPDeviceType> *>(force->kspace);
+    if (pair_mliap && pppm) {
+      pair_mliap->compute_charge_response_forces(pppm->get_phi());
+    }
 
     if (execute_on_host) {
       if (f_merge_copy.extent(0) < atomKK->k_f.extent(0))

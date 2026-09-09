@@ -127,6 +127,9 @@ void PairMLIAPKokkos<DeviceType>::compute(int eflag, int vflag)
     k_data->modified(model_space, EATOMS_MASK);
   }
 
+  comm->forward_comm();
+
+
   // calculate force contributions beta_i*dB_i/dR_j
   atomKK->sync(descriptor_space,F_MASK);
   k_data->sync(descriptor_space, NUMNEIGHS_MASK | IATOMS_MASK | IELEMS_MASK | ELEMS_MASK | BETAS_MASK | JATOMS_MASK | PAIR_I_MASK | JELEMS_MASK | RIJ_MASK );
